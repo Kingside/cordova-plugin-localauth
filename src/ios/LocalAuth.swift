@@ -32,7 +32,7 @@ import LocalAuthentication
     }
 
     private func hasUser() -> Bool {
-        if let login = try? keychain.getString("login") {
+        if let _ = try? keychain!.getString("login") {
             return true
         } else {
             return false
@@ -44,17 +44,30 @@ import LocalAuthentication
         var pluginResult: CDVPluginResult?
         if let email = command.arguments[0] as! String as String! {
             if let password = command.arguments[1] as! String as String! {
-                keychain.set(email, key: "login")
-                keychain.set(password, key: email)
-                pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: true)
+                do {
+                    try keychain!.set(email, key: "login")
+                    try keychain!.set(password, key: email)
+                    pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: true)
+                } catch let error {
+                    pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsBool: false)
+                    log("error: \(error)")
+                }
+
+
             } else {
-                login = keychain.getString("login")
+                do {
+                    try login = keychain!.getString("login")
+                } catch let error {
+                    pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsBool: false)
+                    log("error: \(error)")
+                }
+
                 if login == email {
                     pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: true)
                 } else {
                     do {
-                        try keychain.remove(login)
-                        try keychain.remove("login")
+                        try keychain!.remove(login!)
+                        try keychain!.remove("login")
                         pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: false)
                     } catch let error {
                         pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsBool: false)
@@ -113,10 +126,15 @@ import LocalAuthentication
                 (success: Bool, evalPolicyError: NSError?) -> Void in
 
                 if success {
-                    login = keychain.getString("login")
-                    password = keychain.getString(login)
-                    self.log("Authenticated with Touch ID")
-                    authenticated = true
+                    do {
+                        try login = self.keychain!.getString("login")
+                        try password = self.keychain!.getString(login!)
+                        self.log("Authenticated with Touch ID")
+                        authenticated = true
+                    } catch let error {
+                        self.log("\(error)")
+                    }
+
                 } else {
                     switch evalPolicyError!.code {
                     case LAError.SystemCancel.rawValue:
