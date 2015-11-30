@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="com.tripcase.cordova.localauth" version="0.0.0">
+	<name>LocalAuth</name>
+	<description>Client side user authentication via fingerprint bio-metrics for supported devices</description>
+	<js-module src="www/LocalAuth.js" name="LocalAuth" >
+		<clobbers target="LocalAuth" />
+	</js-module>
+
+	<platform name="ios">
+		<hook type="after_plugin_install" src="hooks/add_swift_support.js" />
+		<config-file target="config.xml" parent="/*">
+			<feature name="LocalAuth">
+				<param name="ios-package" value="SCPLocalAuth" />
+			</feature>
+		</config-file>
+		<framework src="LocalAuthentication.framework" />
+		<header-file src="src/ios/LocalAuth-Bridging-Header.h" />
+		<source-file src="src/ios/Keychain.swift" />
+		<source-file src="src/ios/LocalAuth.swift" />
+	</platform>
+</plugin>
