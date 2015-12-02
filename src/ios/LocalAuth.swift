@@ -19,29 +19,31 @@ import LocalAuthentication
         NSLog("%@ - %@", "LocalAuth", message)
     }
 
-    func initialize(command: CDVInvokedUrlCommand) {
-        var pluginResult: CDVPluginResult?
-        if let appKey = command.argumentAtIndex(0) as? String {
-            keychain = Keychain(service: appKey).synchronizable(true)
-            pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
-        } else {
-            pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR)
-        }
+    private func getKeychain() -> Keychain? {
+        if let appKeychain: Keychain? = Keychain(service: NSBundle.mainBundle().bundleIdentifier!) {
+            appKeychain!
+                .synchronizable(true)
+                .label("TripCase")
 
-        commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
+            return appKeychain
+        }
     }
 
     private func hasUser() -> Bool {
+        keychain = Keychain(service: NSBundle.mainBundle().bundleIdentifier!).synchronizable(true)
         if let _ = try? keychain!.getString("login") {
             return true
         } else {
             return false
         }
     }
-
+    override func pluginInitialize() {
+        keychain = Keychain(service: NSBundle.mainBundle().bundleIdentifier!).synchronizable(true)
+    }
     func user(command: CDVInvokedUrlCommand) {
         var login: String?
         var pluginResult: CDVPluginResult?
+        keychain = Keychain(service: NSBundle.mainBundle().bundleIdentifier!).synchronizable(true)
         if let email = command.arguments[0] as! String as String! {
             if let password = command.arguments[1] as! String as String! {
                 do {
@@ -52,7 +54,6 @@ import LocalAuthentication
                     pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsBool: false)
                     log("error: \(error)")
                 }
-
 
             } else {
                 do {
@@ -109,17 +110,45 @@ import LocalAuthentication
         return canEvaluate!
     }
 
-    func isAvailable(command: CDVInvokedUrlCommand) {
+    func checkAvailable(command: CDVInvokedUrlCommand) {
         let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: self.canAuthenticate())
 
         self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
     }
 
+    func enrolled(command: CDVInvokedUrlCommand) {
+        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: self.hasUser())
+
+        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
+    }
+
+    func clearUser(command: CDVInvokedUrlCommand) {
+        var pluginResult: CDVPluginResult?
+        var login: String?
+        if let appKeychain = getKeychain() {
+            do {
+                try login = appKeychain.getString("login")
+                if (login != nil) {
+                    try appKeychain[login!] = nil
+                    try appKeychain["login"] = nil
+                }
+                pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsBool: false)
+            } catch let error {
+                pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsBool: false)
+                log("error: \(error)")
+            }
+        } else {
+            pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsBool: false)
+        }
+        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
+    }
+
     func authenticate(command: CDVInvokedUrlCommand) {
-        var authenticated = false
         var error: String?
         var login: String?
         var password: String?
+        var response: String?
+        keychain = Keychain(service: NSBundle.mainBundle().bundleIdentifier!).synchronizable(true)
         if canAuthenticate() {
             let context = LAContext()
             context.evaluatePolicy(LAPolicy.DeviceOwnerAuthenticationWithBiometrics, localizedReason: "Sign in to TripCase", reply: {
@@ -127,10 +156,12 @@ import LocalAuthentication
 
                 if success {
                     do {
+                        self.log("Authenticated with Touch ID")
                         try login = self.keychain!.getString("login")
                         try password = self.keychain!.getString(login!)
-                        self.log("Authenticated with Touch ID")
-                        authenticated = true
+                        response = "{\"email\":\"\(login!)\",\"password\":\"\(password!)\"}"
+                        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsString: response)
+                        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
                     } catch let error {
                         self.log("\(error)")
                     }
@@ -140,29 +171,33 @@ import LocalAuthentication
                     case LAError.SystemCancel.rawValue:
                         self.log("Authentication was cancelled by the system")
                         error = "SystemCancel"
+                        response = "{\"error\":\"\(error!)\"}"
+                        let pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsString: response)
+                        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
                     case LAError.UserCancel.rawValue:
                         self.log("Authentication was cancelled by the user")
                         error = "UserCancel"
-                    case LAError.UserFallback.rawValue:
-                        self.log("user selected to enter custom password")
-                        error = "UserFallback"
+                        response = "{\"error\":\"\(error!)\"}"
+                        let pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsString: response)
+                        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
+                    // case LAError.UserFallback.rawValue:
+                        // self.log("user selected to enter custom password")
+                        // error = "UserFallback"
                     default:
                         self.log("Authentication failed")
-                        error = "Uncaught"
+                        error = "Aborted"
+                        response = "{\"error\":\"\(error!)\"}"
+                        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsString: response)
+                        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
                     }
                 }
             })
         } else {
             error = "Unupported"
+            response = "{\"error\":\"\(error!)\"}"
+            let pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsString: response)
+            self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
         }
-        var response = "{\"success\":\(authenticated),"
-        if login != nil {
-            response += "\"credentials\":{\"email\":\"\(login)\",\"password\":\"\(password)\"},"
-        }
-        response += (error != nil) ? "\"error\":\"\(error)\"}" : "\"error\":null}"
-
-        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsString: response)
-        self.commandDelegate!.sendPluginResult(pluginResult, callbackId: command.callbackId)
     }
 
 }
