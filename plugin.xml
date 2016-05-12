@@ -1,33 +1,42 @@
-<?xml version='1.0' encoding='utf-8'?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="com.tripcase.cordova.localauth" version="0.0.0">
-	<name>LocalAuth</name>
-	<description>Client side user authentication via fingerprint bio-metrics for supported devices</description>
-	<js-module src="www/LocalAuth.js" name="LocalAuth" >
-		<clobbers target="LocalAuth" />
-	</js-module>
-	<!-- android -->
-	<platform name="android">
-	    <config-file target="res/xml/config.xml" parent="/*">
-	      <feature name="LocalAuth">
-	        <param name="android-package" value="com.sabre.tripcase.localAuth.LocalAuth" />
-	      </feature>
-	    </config-file>
-	    <config-file target="AndroidManifest.xml" parent="/manifest">
-	      <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-	    </config-file>
-	    <source-file src="src/android/LocalAuth.java" target-dir="src/com/sabre/tripcase/localAuth" />
-	</platform>
-	<!-- ios -->
-	<platform name="ios">
-		<hook type="after_plugin_install" src="hooks/add_swift_support.js" />
-		<config-file target="config.xml" parent="/*">
-			<feature name="LocalAuth">
-				<param name="ios-package" value="SCPLocalAuth" />
-			</feature>
-		</config-file>
-		<framework src="LocalAuthentication.framework" />
-		<header-file src="src/ios/LocalAuth-Bridging-Header.h" />
-		<source-file src="src/ios/Keychain.swift" />
-		<source-file src="src/ios/LocalAuth.swift" />
-	</platform>
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="com.sabre.tripcase.localAuth"
+        version="0.0.1">
+
+  <name>Local Auth</name>
+  <description>A Cordova plugin for accessing biometric scanners</description>
+
+  <engines>
+    <engine name="cordova" version=">=3.5.0" />
+  </engines>
+
+  <js-module src="www/localAuth.js" name="LocalAuth">
+    <clobbers target="localAuth" />
+  </js-module>
+
+  <!-- android -->
+  <platform name="android">
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="LocalAuth">
+        <param name="android-package" value="com.sabre.tripcase.localAuth.LocalAuth" />
+      </feature>
+    </config-file>
+    <config-file target="AndroidManifest.xml" parent="/manifest">
+      <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    </config-file>
+    <source-file src="src/android/LocalAuth.java" target-dir="src/com/sabre/tripcase/localAuth" />
+    <source-file src="src/android/FingerprintUiHelper.java" target-dir="src/com/sabre/tripcase/localAuth" />
+    <source-file src="src/android/FingerprintAuthenticationDialogFragment.java" target-dir="src/com/sabre/tripcase/localAuth" />
+  </platform>
+
+  <!-- ios -->
+  <platform name="ios">
+    <config-file target="config.xml" parent="/*">
+      <feature name="localAuth">
+        <param name="ios-package" value="LocalAuth" />
+      </feature>
+    </config-file>
+    <source-file src="src/ios/localAuth.swift" />
+  </platform>
+
 </plugin>

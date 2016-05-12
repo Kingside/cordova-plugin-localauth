@@ -14,7 +14,7 @@
  * limitations under the License
  */
 
-package com.cordova.plugin.android.fingerprintauth;
+package com.sabre.tripcase.localAuth;
 
 import android.app.DialogFragment;
 import android.app.KeyguardManager;
@@ -32,6 +32,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.sabre.tripcase.localAuth.LocalAuth;
 
 /**
  * A dialog which uses fingerprint APIs to authenticate the user, and falls back to password
@@ -75,14 +77,14 @@ implements FingerprintUiHelper.Callback {
                              Bundle savedInstanceState) {
         int fingerprint_auth_dialog_title_id = getResources()
         .getIdentifier("fingerprint_auth_dialog_title", "string",
-                       FingerprintAuth.packageName);
+                       LocalAuth.packageName);
         getDialog().setTitle(getString(fingerprint_auth_dialog_title_id));
         int fingerprint_dialog_container_id = getResources()
         .getIdentifier("fingerprint_dialog_container", "layout",
-                       FingerprintAuth.packageName);
+                       LocalAuth.packageName);
         View v = inflater.inflate(fingerprint_dialog_container_id, container, false);
         int cancel_button_id = getResources()
-        .getIdentifier("cancel_button", "id", FingerprintAuth.packageName);
+        .getIdentifier("cancel_button", "id", LocalAuth.packageName);
         mCancelButton = (Button) v.findViewById(cancel_button_id);
         mCancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -92,17 +94,17 @@ implements FingerprintUiHelper.Callback {
         });
         
         int fingerprint_container_id = getResources()
-        .getIdentifier("fingerprint_container", "id", FingerprintAuth.packageName);
+        .getIdentifier("fingerprint_container", "id", LocalAuth.packageName);
         mFingerprintContent = v.findViewById(fingerprint_container_id);
         
         int new_fingerprint_enrolled_description_id = getResources()
         .getIdentifier("new_fingerprint_enrolled_description", "id",
-                       FingerprintAuth.packageName);
+                       LocalAuth.packageName);
         
         int fingerprint_icon_id = getResources()
-        .getIdentifier("fingerprint_icon", "id", FingerprintAuth.packageName);
+        .getIdentifier("fingerprint_icon", "id", LocalAuth.packageName);
         int fingerprint_status_id = getResources()
-        .getIdentifier("fingerprint_status", "id", FingerprintAuth.packageName);
+        .getIdentifier("fingerprint_status", "id", LocalAuth.packageName);
         mFingerprintUiHelper = mFingerprintUiHelperBuilder.build(
                                                                  (ImageView) v.findViewById(fingerprint_icon_id),
                                                                  (TextView) v.findViewById(fingerprint_status_id), this);
@@ -154,7 +156,7 @@ implements FingerprintUiHelper.Callback {
     
     private void updateStage() {
         int cancel_id = getResources()
-        .getIdentifier("cancel", "string", FingerprintAuth.packageName);
+        .getIdentifier("cancel", "string", LocalAuth.packageName);
         switch (mStage) {
             case FINGERPRINT:
                 mCancelButton.setText(cancel_id);
@@ -170,7 +172,7 @@ implements FingerprintUiHelper.Callback {
                     // Show a message that the user hasn't set up a lock screen.
                     int secure_lock_screen_required_id = getResources()
                     .getIdentifier("secure_lock_screen_required", "string",
-                                   FingerprintAuth.packageName);
+                                   LocalAuth.packageName);
                     Toast.makeText(getContext(),
                                    getString(secure_lock_screen_required_id),
                                    Toast.LENGTH_LONG).show();
@@ -195,7 +197,7 @@ implements FingerprintUiHelper.Callback {
         if (requestCode == REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS) {
             // Challenge completed, proceed with using cipher
             if (resultCode == getActivity().RESULT_OK) {
-                FingerprintAuth.onAuthenticated(false /* used backup */);
+                LocalAuth.onAuthenticated(false /* used backup */);
             } else {
                 // The user canceled or didn’t complete the lock screen
                 // operation. Go to error/cancellation flow.
@@ -208,7 +210,7 @@ implements FingerprintUiHelper.Callback {
     public void onAuthenticated() {
         // Callback from FingerprintUiHelper. Let the activity know that authentication was
         // successful.
-        FingerprintAuth.onAuthenticated(true /* withFingerprint */);
+        LocalAuth.onAuthenticated(true /* withFingerprint */);
         dismiss();
     }
     

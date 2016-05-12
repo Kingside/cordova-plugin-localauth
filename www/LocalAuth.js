@@ -6,10 +6,13 @@ var localAuth = {
 				reject,
 				"LocalAuth",
 				"authenticate",
-				[string,// Array of arguments to pass to the Java class
-                clientId: "hello world",//alias for app package name
-                clientSecret: "foo bar"//client secret for android key store
-            	]
+				[string,
+					{
+						clientId: "hello world",//alias for app package name
+                		clientSecret: "foo bar"//client secret for android key store
+
+					}
+				]
 			);
 		});
 	},
