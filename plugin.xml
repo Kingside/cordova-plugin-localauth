@@ -5,7 +5,19 @@
 	<js-module src="www/LocalAuth.js" name="LocalAuth" >
 		<clobbers target="LocalAuth" />
 	</js-module>
-
+	<!-- android -->
+	<platform name="android">
+	    <config-file target="res/xml/config.xml" parent="/*">
+	      <feature name="LocalAuth">
+	        <param name="android-package" value="com.sabre.tripcase.localAuth.LocalAuth" />
+	      </feature>
+	    </config-file>
+	    <config-file target="AndroidManifest.xml" parent="/manifest">
+	      <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+	    </config-file>
+	    <source-file src="src/android/LocalAuth.java" target-dir="src/com/sabre/tripcase/localAuth" />
+	</platform>
+	<!-- ios -->
 	<platform name="ios">
 		<hook type="after_plugin_install" src="hooks/add_swift_support.js" />
 		<config-file target="config.xml" parent="/*">
