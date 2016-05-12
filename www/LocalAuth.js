@@ -9,8 +9,7 @@ var localAuth = {
 				[string,
 					{
 						clientId: "hello world",//alias for app package name
-                		clientSecret: "foo bar"//client secret for android key store
-
+						clientSecret: "foo bar"//client secret for android key store
 					}
 				]
 			);

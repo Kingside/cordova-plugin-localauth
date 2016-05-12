@@ -38,34 +38,34 @@ import javax.crypto.SecretKey;
 
 @TargetApi(23)
 public class LocalAuth extends CordovaPlugin {
-    
+
     public static final String TAG = "LocalAuth";
     public static String packageName;
-    
+
     private static final String DIALOG_FRAGMENT_TAG = "FpAuthDialog";
     private static final String ANDROID_KEY_STORE = "AndroidKeyStore";
-    
+
     KeyguardManager mKeyguardManager;
     FingerprintAuthenticationDialogFragment mFragment;
     public static KeyStore mKeyStore;
     public static KeyGenerator mKeyGenerator;
     public static Cipher mCipher;
     private FingerprintManager mFingerPrintManager;
-    
+
     public static CallbackContext mCallbackContext;
     public static PluginResult mPluginResult;
-    
+
     /** Alias for our key in the Android Key Store */
     private static String mClientId;
     /** Used to encrypt token */
     private static String mClientSecret;
-    
+
     /**
      * Constructor.
      */
     public LocalAuth() {
     }
-    
+
     /**
      * Sets the context of the Command. This can then be used to do things like
      * get file paths associated with the Activity.
@@ -75,26 +75,26 @@ public class LocalAuth extends CordovaPlugin {
      * @param webView
      *            The CordovaWebView Cordova is running in.
      */
-    
+
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         Log.v(TAG, "Init FingerprintAuth");
         packageName = cordova.getActivity().getApplicationContext().getPackageName();
         mPluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-        
+
         if (android.os.Build.VERSION.SDK_INT < 23) {
             return;
         }
-        
+
         mKeyguardManager = cordova.getActivity().getSystemService(KeyguardManager.class);
         mFingerPrintManager = cordova.getActivity().getApplicationContext()
         .getSystemService(FingerprintManager.class);
-        
+
         try {
             mKeyGenerator = KeyGenerator.getInstance(
                                                      KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEY_STORE);
             mKeyStore = KeyStore.getInstance(ANDROID_KEY_STORE);
-            
+
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to get an instance of KeyGenerator", e);
         } catch (NoSuchProviderException e) {
@@ -102,7 +102,7 @@ public class LocalAuth extends CordovaPlugin {
         } catch (KeyStoreException e) {
             throw new RuntimeException("Failed to get an instance of KeyStore", e);
         }
-        
+
         try {
             mCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
                                          + KeyProperties.BLOCK_MODE_CBC + "/"
@@ -113,7 +113,7 @@ public class LocalAuth extends CordovaPlugin {
             throw new RuntimeException("Failed to get an instance of Cipher", e);
         }
     }
-    
+
     /**
      * Executes the request and returns PluginResult.
      *
@@ -134,10 +134,9 @@ public class LocalAuth extends CordovaPlugin {
             mCallbackContext.sendPluginResult(mPluginResult);
             return true;
         }
-        
-        JSONObject arg_object = args.getJSONObject(0);
-        
+
         if (action.equals("authenticate")) {
+            JSONObject arg_object = args.getJSONObject(1);
             if (!arg_object.has("clientId") || !arg_object.has("clientSecret")) {
                 mPluginResult = new PluginResult(PluginResult.Status.ERROR);
                 mCallbackContext.error("Missing required parameters");
@@ -153,7 +152,7 @@ public class LocalAuth extends CordovaPlugin {
                         // Set up the crypto object for later. The object will be authenticated by use
                         // of the fingerprint.
                         if (initCipher()) {
-                            
+
                             mFragment = new FingerprintAuthenticationDialogFragment();
                             mFragment.setCancelable(false);
                             // Show the fingerprint dialog. The user has the option to use the fingerprint with
@@ -174,7 +173,7 @@ public class LocalAuth extends CordovaPlugin {
                 });
                 mPluginResult.setKeepCallback(true);
                 mCallbackContext.sendPluginResult(mPluginResult);
-                
+
             } else {
                 mPluginResult = new PluginResult(PluginResult.Status.ERROR);
                 mCallbackContext.error("Fingerprint authentication not available");
@@ -191,12 +190,12 @@ public class LocalAuth extends CordovaPlugin {
         }
         return false;
     }
-    
+
     private boolean isFingerprintAuthAvailable() {
         return mFingerPrintManager.isHardwareDetected()
         && mFingerPrintManager.hasEnrolledFingerprints();
     }
-    
+
     /**
      * Initialize the {@link Cipher} instance with the created key in the {@link #createKey()}
      * method.
@@ -233,7 +232,7 @@ public class LocalAuth extends CordovaPlugin {
             return setPluginResultError("Exception");
         }
     }
-    
+
     /**
      * Creates a symmetric key in the Android Key Store which can only be used after the user has
      * authenticated with fingerprint.
@@ -270,7 +269,7 @@ public class LocalAuth extends CordovaPlugin {
             setPluginResultError("IOException");
         }
     }
-    
+
     public static void onAuthenticated(boolean withFingerprint) {
         mPluginResult = new PluginResult(PluginResult.Status.OK);
         JSONObject resultJson = new JSONObject();
@@ -278,10 +277,10 @@ public class LocalAuth extends CordovaPlugin {
             if (withFingerprint) {
                 // If the user has authenticated with fingerprint, verify that using cryptography and
                 // then return the encrypted token
-                
+
                 byte[] encrypted = tryEncrypt();
                 resultJson.put("withFingerprint", Base64.encodeToString(encrypted, 0 /* flags */));
-                
+
             } else {
                 // Authentication happened with backup password.
                 //				mCallbackContext.success("with password");
@@ -297,7 +296,7 @@ public class LocalAuth extends CordovaPlugin {
         mCallbackContext.success(resultJson);
         mCallbackContext.sendPluginResult(mPluginResult);
     }
-    
+
     /**
      * Tries to encrypt some data with the generated key in {@link #createKey} which is
      * only works if the user has just authenticated via fingerprint.
@@ -305,7 +304,7 @@ public class LocalAuth extends CordovaPlugin {
     private static byte[] tryEncrypt() throws BadPaddingException, IllegalBlockSizeException {
         return mCipher.doFinal(mClientSecret.getBytes());
     }
-    
+
     public static boolean setPluginResultError(String errorMessage) {
         mCallbackContext.error(errorMessage);
         mPluginResult = new PluginResult(PluginResult.Status.ERROR);
